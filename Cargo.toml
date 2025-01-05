@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "connectors",
+    "agents",
     "models",
     "utils",
     "cli",

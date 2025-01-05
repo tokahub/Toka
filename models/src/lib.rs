@@ -2,14 +2,18 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub struct GPTRequest {
-    pub model: String,
+    pub api_key: Option<String>,
     pub messages: Vec<Message>,
+    pub model: String,
+    pub provider: String,
+    pub temperature: Option<f64>,
+    pub max_tokens: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Message {
-    pub role: String,
     pub content: String,
+    pub role: String,
 }
 
 #[derive(Deserialize)]

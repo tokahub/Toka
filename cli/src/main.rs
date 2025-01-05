@@ -1,15 +1,14 @@
-use connectors::gpt4free::Agent;
+use agents::gpt4free::GPT4FreeAgent;
 use std::io::{self, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let api_url = "http://localhost:1337/v1/chat/completions";
     print!("Enter system content: ");
     io::stdout().flush()?;
     let mut system_content = String::new();
     io::stdin().read_line(&mut system_content)?;
     let system_content = system_content.trim();
 
-    let mut agent = Agent::new(api_url, system_content);
+    let mut agent = GPT4FreeAgent::new(system_content);
 
     loop {
         print!("USER: ");
