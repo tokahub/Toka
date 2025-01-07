@@ -2,6 +2,9 @@ use agents::gpt4free::GPT4FreeAgent;
 use std::io::{self, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+    // THIS MIGHT GET REMOVED FOR THE RELEASE 
+    /*
     print!("Enter system content: ");
     io::stdout().flush()?;
     let mut system_content = String::new();
@@ -26,6 +29,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(err) => eprintln!("Error: {}", err),
         }
     }
-
+    */
     Ok(())
 }
