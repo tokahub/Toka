@@ -21,8 +21,8 @@ impl GPT4FreeAgent {
     }
 
 
-    pub fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
-        self.base.send_message(user_message)
+    pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+        self.base.send_message(user_message).await
     }
 
     pub fn set_custom_provider(&mut self, provider: &str) {

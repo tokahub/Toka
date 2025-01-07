@@ -21,8 +21,8 @@ impl GPT4FreeAgent {
     }
 
 
-    pub fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
-        self.base.send_message(user_message)
+    pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+        self.base.send_message(user_message).await
     }
 
     pub fn set_custom_provider(&mut self, provider: &str) {
@@ -35,5 +35,9 @@ impl GPT4FreeAgent {
 
     pub fn set_max_tokens(&mut self, max_tokens: u64) {
         self.base.set_max_tokens(max_tokens);
+    }
+
+    pub fn add_system_msg(&mut self, sys_msg: &str){
+        self.base.add_system_msg(sys_msg);
     }
 }

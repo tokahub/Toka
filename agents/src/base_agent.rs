@@ -1,6 +1,7 @@
 // This is the base class for all different models there is derivitation
 // It is recommended to use the correct derived class rather than the BaseAgent
-use reqwest::blocking::Client;
+//use reqwest::blocking::Client;
+use reqwest::Client;
 use models::{GPTRequest, GPTResponse, Message};
 use std::error::Error;
 
@@ -54,8 +55,15 @@ impl BaseAgent {
         self.max_tokens = Some(max_tokens);
     }
 
+    pub fn add_system_msg(&mut self, sys_msg: &str){
+        self.messages.push(Message {
+            role: "system".to_string(),
+            content: sys_msg.to_string(),
+        });
+    }
+
     // Send a message and receive a response
-    pub fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         self.messages.push(Message {
             role: "user".to_string(),
             content: user_message.to_string(),
@@ -81,14 +89,14 @@ impl BaseAgent {
             request_builder = request_builder.header("Authorization", format!("Bearer {}", api_key));
         }
 
-        let response = request_builder.json(&request).send()?;
+        let response = request_builder.json(&request).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("HTTP Error: {}", response.status()).into());
         }
 
         // Parse the response
-        let body = response.text()?;
+        let body = response.text().await?;
         let gpt_response: GPTResponse = serde_json::from_str(&body)?;
 
         // Extract the reply

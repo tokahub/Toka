@@ -2,3 +2,9 @@
 name = "app"
 version = "0.1.0"
 edition = "2021"
+
+[dependencies]
+agents = { path = "../agents" }
+utils = { path = "../utils" }
+tweety-rs = "0.1.4"
+tokio = { version = "1", features = ["full"] }
