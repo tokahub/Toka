@@ -40,4 +40,8 @@ impl GPT4FreeAgent {
     pub fn add_system_msg(&mut self, sys_msg: &str){
         self.base.add_system_msg(sys_msg);
     }
+
+    pub fn convert_to_coder(&mut self){
+        self.base.convert_to_coder();
+    }
 }
