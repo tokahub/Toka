@@ -6,7 +6,7 @@ use tokio::io::{self, BufReader, AsyncBufReadExt};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let system_content = "You are an intelligent assistant specialized in writing concise and engaging tweets. Important: use 280 characters or less";
-    let mut agent = GPT4FreeAgent::new(system_content);
+    let mut agent = GPT4FreeAgent::new_with_sys(system_content);
 
     let client = TweetyClient::new(
         "your_consumer_key",

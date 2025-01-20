@@ -1,6 +1,5 @@
 // This is the base class for all different models there is derivitation
 // It is recommended to use the correct derived class rather than the BaseAgent
-//use reqwest::blocking::Client;
 use reqwest::Client;
 use models::{GPTRequest, GPTResponse, Message};
 use std::error::Error;
@@ -22,7 +21,7 @@ pub struct BaseAgent {
 
 impl BaseAgent {
     // Create a new BaseAgent
-    pub fn new(
+    pub fn new_with_param(
         api_url: &str,
         api_key: Option<String>,
         system_content: Option<String>,
@@ -45,6 +44,10 @@ impl BaseAgent {
             messages,
             coder_agent: false,
         }
+    }
+
+    pub fn new(api_url: &str) -> Self{
+        Self::new_with_param(api_url, None, None, None, None)
     }
 
     // Set model, temperature, and max tokens
@@ -205,14 +208,8 @@ impl BaseAgent {
         let system_message = "You are a code generator. Your task is to generate working code based on the user's input.
             Important: - Only generate code and comments. 
             - Do not include anything else, such as code block markers (```) or language labels. 
-            - The code must be usable without removing anything.";
-        /*
-        "
-        You are a code-generation assistant. Your task is to generate working code based on the user's input.
-        - If the user asks for Python code, generate only Python code.
-        - If the user asks for shell commands, generate only shell commands.
-        - Do not include explanations. Only provide the code.";
-        */
+            - The code must be usable without removing anything.
+            - Do not include anythin but the code part itself";
         self.messages.push(Message{
             role: "system".to_string(),
             content: system_message.to_string(),

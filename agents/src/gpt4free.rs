@@ -7,10 +7,23 @@ pub struct GPT4FreeAgent {
 
 impl GPT4FreeAgent {
     // Create a new GPT4FreeAgent
-    pub fn new(system_content: &str) -> Self {
+    pub fn new() -> Self {
         // change if gpt4free doesnt run locally for you
         let api_url = "http://localhost:1337/v1/chat/completions";
-        let base = BaseAgent::new(
+        let base = BaseAgent::new_with_param(
+            api_url,
+            None,
+            None,
+            Some("gpt-4".to_string()),
+            None,
+        );
+        Self { base }
+    }
+
+    pub fn new_with_sys(system_content: &str) -> Self {
+        // change if gpt4free doesnt run locally for you
+        let api_url = "http://localhost:1337/v1/chat/completions";
+        let base = BaseAgent::new_with_param(
             api_url,
             None,
             Some(system_content.to_string()),
@@ -19,7 +32,6 @@ impl GPT4FreeAgent {
         );
         Self { base }
     }
-
 
     pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         self.base.send_message(user_message).await
