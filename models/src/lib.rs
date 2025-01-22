@@ -10,7 +10,7 @@ pub struct GPTRequest {
     pub max_tokens: Option<u64>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Message {
     pub content: String,
     pub role: String,

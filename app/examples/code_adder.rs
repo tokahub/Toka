@@ -2,7 +2,7 @@ use agents::gpt4free::GPT4FreeAgent;
 
 #[tokio::main]
 async fn main() {
-    let mut agent = GPT4FreeAgent::new("you are a helpful assistant");
+    let mut agent = GPT4FreeAgent::new();
 
     agent.convert_to_coder();
 

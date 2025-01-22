@@ -3,20 +3,24 @@
 use reqwest::Client;
 use models::{GPTRequest, GPTResponse, Message};
 use std::error::Error;
-use std::fs;
-use std::io;
+use std::fs::{self, File};
+use std::io::{self, Write};
 use std::path::Path;
+use serde::{Serialize, Deserialize};
+use base64::{encode, decode};
 
+#[derive(Serialize, Deserialize)]
 pub struct BaseAgent {
-    api_url: String,
-    api_key: Option<String>,
-    client: Client,
-    model: String,
-    provider: Option<String>,
-    temperature: Option<f64>,
-    max_tokens: Option<u64>,
-    messages: Vec<Message>,
-    coder_agent: bool,
+    pub api_url: String,
+    pub api_key: Option<String>,
+    #[serde(skip_serializing, skip_deserializing)] 
+    pub client: Client,
+    pub model: String,
+    pub provider: Option<String>,
+    pub temperature: Option<f64>,
+    pub max_tokens: Option<u64>,
+    pub messages: Vec<Message>,
+    pub coder_agent: bool,
 }
 
 impl BaseAgent {
@@ -216,5 +220,28 @@ impl BaseAgent {
         });
 
         self.coder_agent = true;
+    }
+
+    // Export the agent
+    pub fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        let json = serde_json::to_string(self)?;
+        let encoded = encode(json);
+
+        let mut file = File::create(file_path)?;
+        file.write_all(encoded.as_bytes())?;
+
+        Ok(())
+    }
+
+    // Import the agent
+    pub fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
+        let encoded = fs::read_to_string(file_path)?;
+        let decoded = decode(encoded)?;
+        let json = String::from_utf8(decoded)?;
+        let mut agent: BaseAgent = serde_json::from_str(&json)?;
+        
+        agent.client = Client::new();
+
+        Ok(agent)
     }
 }

@@ -1,6 +1,6 @@
 use crate::base_agent::BaseAgent;
 use std::error::Error;
-
+use models::Message;
 pub struct GPT4FreeAgent {
     base: BaseAgent,
 }
@@ -41,19 +41,80 @@ impl GPT4FreeAgent {
         self.base.set_model(provider);
     }
 
+    pub fn get_custom_provider(&self) -> &str {
+        &self.base.model
+    }
+
+    // Setter and Getter for temperature
     pub fn set_temperature(&mut self, temperature: f64) {
         self.base.set_temperature(temperature);
     }
 
+    pub fn get_temperature(&self) -> Option<f64> {
+        self.base.temperature
+    }
+
+    // Setter and Getter for max_tokens
     pub fn set_max_tokens(&mut self, max_tokens: u64) {
         self.base.set_max_tokens(max_tokens);
     }
 
-    pub fn add_system_msg(&mut self, sys_msg: &str){
+    pub fn get_max_tokens(&self) -> Option<u64> {
+        self.base.max_tokens
+    }
+
+    // Add a system message
+    pub fn add_system_msg(&mut self, sys_msg: &str) {
         self.base.add_system_msg(sys_msg);
     }
 
-    pub fn convert_to_coder(&mut self){
+    // Get all system messages
+    pub fn get_system_messages(&self) -> Vec<&Message> {
+        self.base
+            .messages
+            .iter()
+            .filter(|msg| msg.role == "system")
+            .collect()
+    }
+
+    // Convert to coder agent
+    pub fn convert_to_coder(&mut self) {
         self.base.convert_to_coder();
+    }
+
+    // Check if the agent is a coder agent
+    pub fn is_coder_agent(&self) -> bool {
+        self.base.coder_agent
+    }
+
+    // Get the API URL
+    pub fn get_api_url(&self) -> &str {
+        &self.base.api_url
+    }
+
+    // Get the API key
+    pub fn get_api_key(&self) -> Option<&String> {
+        self.base.api_key.as_ref()
+    }
+
+    // Get the model
+    pub fn get_model(&self) -> &str {
+        &self.base.model
+    }
+
+    // Get the provider
+    pub fn get_provider(&self) -> Option<&String> {
+        self.base.provider.as_ref()
+    }
+
+    pub fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        self.base.export_to_file(file_path)?;
+        Ok(())
+    }
+
+    pub fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
+        // reconstruct base
+        let base = BaseAgent::import_from_file(file_path)?;
+        Ok(Self { base })
     }
 }
