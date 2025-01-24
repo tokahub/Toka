@@ -4,7 +4,7 @@ use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // create a custom GPT4FreeAgent
-    let mut agent = GPT4FreeAgent::new();
+    let mut agent = GPT4FreeAgent::new("dummy");
 
     // fill up the paramets
     agent.convert_to_coder();

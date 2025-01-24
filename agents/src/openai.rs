@@ -7,10 +7,11 @@ pub struct GPT4FreeAgent {
 
 impl GPT4FreeAgent {
     // Create a new GPT4FreeAgent
-    pub fn new(api_key: &str) -> Self {
+    pub fn new(name : &str, api_key: &str) -> Self {
         let api_url = "https://api.openai.com/v1/chat/completions";
         // Will need an Api key
         let base = BaseAgent::new_with_param(
+            name,
             api_url,
             Some(api_key.to_string()),
             None,
@@ -20,10 +21,11 @@ impl GPT4FreeAgent {
         Self { base }
     }
 
-    pub fn new_with_sys(system_content: &str, api_key: &str) -> Self {
+    pub fn new_with_sys(name : &str, system_content: &str, api_key: &str) -> Self {
         let api_url = "https://api.openai.com/v1/chat/completions";
         // Will need an Api key
         let base = BaseAgent::new_with_param(
+            name,
             api_url,
             Some(api_key.to_string()),
             Some(system_content.to_string()),

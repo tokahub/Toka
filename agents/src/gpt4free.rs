@@ -7,10 +7,11 @@ pub struct GPT4FreeAgent {
 
 impl GPT4FreeAgent {
     // Create a new GPT4FreeAgent
-    pub fn new() -> Self {
+    pub fn new(name : &str) -> Self {
         // change if gpt4free doesnt run locally for you
         let api_url = "http://localhost:1337/v1/chat/completions";
         let base = BaseAgent::new_with_param(
+            name,
             api_url,
             None,
             None,
@@ -20,10 +21,11 @@ impl GPT4FreeAgent {
         Self { base }
     }
 
-    pub fn new_with_sys(system_content: &str) -> Self {
+    pub fn new_with_sys(name : &str, system_content: &str) -> Self {
         // change if gpt4free doesnt run locally for you
         let api_url = "http://localhost:1337/v1/chat/completions";
         let base = BaseAgent::new_with_param(
+            name,
             api_url,
             None,
             Some(system_content.to_string()),
@@ -105,6 +107,11 @@ impl GPT4FreeAgent {
     // Get the provider
     pub fn get_provider(&self) -> Option<&String> {
         self.base.provider.as_ref()
+    }
+
+    // Get the name
+    pub fn get_name(&self) -> &str  {
+        &self.base.name
     }
 
     pub fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {

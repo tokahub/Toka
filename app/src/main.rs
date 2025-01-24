@@ -1,63 +1,121 @@
+use std::io::{self, Write};
+use std::error::Error;
 use agents::gpt4free::GPT4FreeAgent;
-use tweety_rs::TweetyClient;
-use tokio;
-use tokio::io::{self, BufReader, AsyncBufReadExt};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let system_content = "You are an intelligent assistant specialized in writing concise and engaging tweets. Important: use 280 characters or less";
-    let mut agent = GPT4FreeAgent::new_with_sys(system_content);
-
-    let client = TweetyClient::new(
-        "your_consumer_key",
-        "your_consumer_key_secret",
-        "your_access_token",
-        "your_access_token_secret",
-    );
+async fn main() -> Result<(), Box<dyn Error>> {
+    print_logo();
+    let mut agents: Vec<GPT4FreeAgent> = vec![GPT4FreeAgent::new("dummy")]; 
 
     loop {
-        println!("Choose an action: \n1. Post a tweet \n3. Exit");
-        let mut choice = String::new();
-        let mut reader = BufReader::new(io::stdin());
-        reader.read_line(&mut choice).await?;
-        let choice = choice.trim();
+        print_agents(&agents);
+        print_help();
+        
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let input = input.trim();
 
-        match choice {
-            "1" => {
-                // Post a tweet
-                println!("Enter your message: ");
-                let mut tweet_content = String::new();
-                reader.read_line(&mut tweet_content).await?;  // Read the tweet content
-                let tweet_content = tweet_content.trim();
-
-                // Match on the Result returned by send_message
-                match agent.send_message(tweet_content).await {
-                    Ok(reply) => {
-                        println!("Generated tweet: {}", reply);  // Successfully generated a tweet
-                        println!("Do you want to tweet this? (y/n): ");
-
-                        let mut confirm = String::new();
-                        reader.read_line(&mut confirm).await?;
-                        if confirm.trim().eq_ignore_ascii_case("y") {
-                            client.post_tweet(&reply, None).await.unwrap();  // Post the tweet
-                        } else {
-                            println!("Tweet not posted. Returning to menu.");
-                        }
-                    }
-                    Err(err) => {
-                        eprintln!("Error generating tweet: {}", err);
-                    }
+        if input == "quit" {
+            break;
+        } else if let Some(agent_nr) = input.strip_prefix("chat ") {
+            if let Ok(index) = agent_nr.parse::<usize>() {
+                if let Some(agent) = agents.get_mut(index) {
+                    chat_mode(agent).await?;
+                } else {
+                    println!("Invalid agent number.");
                 }
             }
-            "3" => {
-                println!("Exiting... Goodbye!");
-                break;  // Exit the loop and the program
-            }
-            _ => {
-                println!("Invalid choice. Please try again.");
+        } else if let Some(agent_nr) = input.strip_prefix("convert to coder ") {
+            if let Ok(index) = agent_nr.parse::<usize>() {
+                if let Some(agent) = agents.get_mut(index) {
+                    agent.convert_to_coder();
+                    println!("Agent {} converted to coder mode!", index);
+                } else {
+                    println!("Invalid agent number.");
+                }
             }
         }
-    }
 
+        else if let Some(filename) = input.strip_prefix("import ") {
+            // Import an agent from a file
+            let file_path = format!("export/{}", filename);
+            match GPT4FreeAgent::import_from_file(&file_path) {
+                Ok(agent) => {
+                    agents.push(agent);
+                    println!("Agent imported successfully from {}", file_path);
+                }
+                Err(e) => println!("Error importing agent: {}", e),
+            }
+        } else if let Some(agent_nr) = input.strip_prefix("export ") {
+            // Export an agent to a file
+            if let Ok(index) = agent_nr.parse::<usize>() {
+                if let Some(agent) = agents.get(index) {
+                    let file_path = format!("export/agent_{}.agent", agent.get_name());
+                    match agent.export_to_file(&file_path) {
+                        Ok(_) => println!("Agent {} exported successfully to {}", index, file_path),
+                        Err(e) => println!("Error exporting agent: {}", e),
+                    }
+                } else {
+                    println!("Invalid agent number.");
+                }
+            }
+        }
+
+        else {
+            println!("Unknown command.");
+        }
+    }
     Ok(())
+}
+
+fn print_agents(agents: &Vec<GPT4FreeAgent>) {
+    println!("\nAvailable Agents:");
+    println!("Idx | Type  | Name");
+    println!("----------------------------");
+    for (i, agent) in agents.iter().enumerate() {
+        let agent_type = if agent.is_coder_agent() { "Coder" } else { "Chat" };
+        println!("{:3} | {:5} | {}", i, agent_type, agent.get_name());
+    }
+}
+
+fn print_help() {
+    println!("\nCommands:");
+    println!("chat <agent nr> - Chat with the specified agent");
+    println!("convert to coder <agent nr> - Convert an agent to coder mode");
+    println!("import <filename> - import a new agent");
+    println!("export <agent nr> - export an agent");
+    println!("quit - Exit the program\n");
+}
+
+async fn chat_mode(agent: &mut GPT4FreeAgent) -> Result<(), Box<dyn Error>> {
+    println!("\nEntering chat mode. Type 'quit' to return.");
+    loop {
+        let mut user_input = String::new();
+        print!("> ");
+        io::stdout().flush()?;
+        io::stdin().read_line(&mut user_input)?;
+        let user_input = user_input.trim();
+
+        if user_input == "quit" {
+            break;
+        }
+        
+        match agent.send_message(user_input).await {
+            Ok(response) => println!("{}: {}", agent.get_name(), response),
+            Err(e) => println!("Error: {}", e),
+        }
+    }
+    Ok(())
+}
+
+fn print_logo(){
+        let ascii_art = r#"
+    ████████╗ ██████╗ ██╗  ██╗ █████╗ 
+    ╚══██╔══╝██╔═══██╗██║ ██╔╝██╔══██╗
+       ██║   ██║   ██║█████╔╝ ███████║
+       ██║   ██║   ██║██╔═██╗ ██╔══██║
+       ██║   ╚██████╔╝██║  ██╗██║  ██║
+       ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
+    "#;
+        println!("{}", ascii_art);
 }

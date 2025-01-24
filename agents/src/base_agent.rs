@@ -11,6 +11,7 @@ use base64::{encode, decode};
 
 #[derive(Serialize, Deserialize)]
 pub struct BaseAgent {
+    pub name : String,
     pub api_url: String,
     pub api_key: Option<String>,
     #[serde(skip_serializing, skip_deserializing)] 
@@ -26,6 +27,7 @@ pub struct BaseAgent {
 impl BaseAgent {
     // Create a new BaseAgent
     pub fn new_with_param(
+        name: &str,
         api_url: &str,
         api_key: Option<String>,
         system_content: Option<String>,
@@ -38,6 +40,7 @@ impl BaseAgent {
             content: system_content.unwrap_or_else(|| "You are a helpful assistant".to_string()),
         }];
         Self {
+            name: name.to_string(),
             api_url: api_url.to_string(),
             api_key,
             client,
@@ -50,8 +53,8 @@ impl BaseAgent {
         }
     }
 
-    pub fn new(api_url: &str) -> Self{
-        Self::new_with_param(api_url, None, None, None, None)
+    pub fn new(name: &str, api_url: &str) -> Self{
+        Self::new_with_param(name, api_url, None, None, None, None)
     }
 
     // Set model, temperature, and max tokens
@@ -206,14 +209,34 @@ impl BaseAgent {
             return
         }
 
-        // TODO change so it only clears system messages 
-        self.messages.clear();
+        // Delete all system messages
+        self.messages.retain(|msg| msg.role != "system");
 
         let system_message = "You are a code generator. Your task is to generate working code based on the user's input.
             Important: - Only generate code and comments. 
             - Do not include anything else, such as code block markers (```) or language labels. 
             - The code must be usable without removing anything.
             - Do not include anythin but the code part itself";
+        self.messages.push(Message{
+            role: "system".to_string(),
+            content: system_message.to_string(),
+        });
+
+        self.coder_agent = true;
+    }
+
+    pub fn convert_to_chat(&mut self)
+    {
+        if self.coder_agent == false
+        {
+            println!("Already a chat agent");
+            return
+        }
+
+        // Delete all system messages
+        self.messages.retain(|msg| msg.role != "system");
+
+        let system_message = "You are a helpful assistant";
         self.messages.push(Message{
             role: "system".to_string(),
             content: system_message.to_string(),
