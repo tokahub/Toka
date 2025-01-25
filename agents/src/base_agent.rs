@@ -8,6 +8,8 @@ use std::io::{self, Write};
 use std::path::Path;
 use serde::{Serialize, Deserialize};
 use base64::{encode, decode};
+use async_trait::async_trait;
+use crate::agent_trait::AgentTrait;
 
 #[derive(Serialize, Deserialize)]
 pub struct BaseAgent {
@@ -57,82 +59,20 @@ impl BaseAgent {
         Self::new_with_param(name, api_url, None, None, None, None)
     }
 
-    // Set model, temperature, and max tokens
-    pub fn set_model(&mut self, model: &str) {
-        self.model = model.to_string();
-    }
-
-    pub fn set_temperature(&mut self, temperature: f64) {
-        self.temperature = Some(temperature);
-    }
-
-    pub fn set_max_tokens(&mut self, max_tokens: u64) {
-        self.max_tokens = Some(max_tokens);
-    }
-
-    pub fn add_system_msg(&mut self, sys_msg: &str){
-        self.messages.push(Message {
-            role: "system".to_string(),
-            content: sys_msg.to_string(),
-        });
-    }
-
-
-    // Build the GPTRequest payload
-    fn build_gpt_request(&self) -> GPTRequest {
-        GPTRequest {
-            model: self.model.clone(),
-            api_key: self.api_key.clone(),
-            provider: self.provider.clone().unwrap_or_else(|| "".to_string()),
-            messages: self.messages.clone(),
-            temperature: self.temperature,
-            max_tokens: self.max_tokens,
-        }
-    }
-
-    // Send the GPT request
-    async fn send_gpt_request(&self, request: &GPTRequest) -> Result<reqwest::Response, Box<dyn Error>> {
-        let mut request_builder = self
-            .client
-            .post(&self.api_url)
-            .header("Content-Type", "application/json");
-
-        if let Some(api_key) = &request.api_key {
-            request_builder = request_builder.header("Authorization", format!("Bearer {}", api_key));
+        // Build the GPTRequest payload
+        fn build_gpt_request(&self) -> GPTRequest {
+            GPTRequest {
+                model: self.model.clone(),
+                api_key: self.api_key.clone(),
+                provider: self.provider.clone().unwrap_or_else(|| "".to_string()),
+                messages: self.messages.clone(),
+                temperature: self.temperature,
+                max_tokens: self.max_tokens,
+            }
         }
 
-        let response = request_builder.json(&request).send().await?;
-
-        if !response.status().is_success() {
-            return Err(format!("HTTP Error: {}", response.status()).into());
-        }
-
-        Ok(response)
-    }
-
-    // Extract the reply from the GPT response
-    async fn extract_reply_from_response(&self, response: reqwest::Response) -> Result<String, Box<dyn Error>> {
-        let body = response.text().await?;
-        let gpt_response: GPTResponse = serde_json::from_str(&body)?;
-
-        if let Some(choice) = gpt_response.choices.get(0) {
-            Ok(choice.message.content.clone())
-        } else {
-            Err("No response.".into())
-        }
-    }
-
-    // Send a message and receive a response
-    pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
-        if self.coder_agent {
-            self.handle_coder_agent(user_message).await
-        } else {
-            self.handle_normal_conversation(user_message).await
-        }
-    }
-
-    // Handle normal conversation
-    async fn handle_normal_conversation(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+            // Handle normal conversation
+    pub async fn handle_normal_conversation(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         self.messages.push(Message {
             role: "user".to_string(),
             content: user_message.to_string(),
@@ -150,7 +90,7 @@ impl BaseAgent {
         Ok(reply)
     }
     
-    async fn handle_coder_agent(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn handle_coder_agent(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         let build_mode = user_message.starts_with("!build");
        
         /*
@@ -200,8 +140,104 @@ impl BaseAgent {
         Ok(format!("Code saved to {}", file_path.display()))
     }
 
+        // Extract the reply from the GPT response
+    pub async fn extract_reply_from_response(&self, response: reqwest::Response) -> Result<String, Box<dyn Error>> {
+        let body = response.text().await?;
+        let gpt_response: GPTResponse = serde_json::from_str(&body)?;
+
+        if let Some(choice) = gpt_response.choices.get(0) {
+            Ok(choice.message.content.clone())
+            } 
+            else {
+            Err("No response.".into())
+            }
+        }
+
+    pub async fn send_gpt_request(&self, request: &GPTRequest) -> Result<reqwest::Response, Box<dyn Error>> {
+        let mut request_builder = self
+            .client
+            .post(&self.api_url)
+            .header("Content-Type", "application/json");
+
+        if let Some(api_key) = &request.api_key {
+            request_builder = request_builder.header("Authorization", format!("Bearer {}", api_key));
+        }
+
+        let response = request_builder.json(&request).send().await?;
+
+        if !response.status().is_success() {
+            return Err(format!("HTTP Error: {}", response.status()).into());
+        }
+
+        Ok(response)
+    }
+    }
+
+#[async_trait]
+impl AgentTrait for BaseAgent {
+    fn set_custom_provider(&mut self, provider: &str) {
+        self.provider = Some(provider.to_string());
+    }
+
+    fn get_provider(&self) -> Option<&str> {
+        self.provider.as_deref()
+    }
+
+    fn get_model(&self) -> &str {
+        &self.model
+    }
+
+    fn get_temperature(&self) -> Option<f64> {
+        self.temperature
+    }
+
+    fn get_max_tokens(&self) -> Option<u64> {
+        self.max_tokens
+    }
+
+    fn get_system_messages(&self) -> Vec<&Message> {
+        self.messages.iter().filter(|msg| msg.role == "system").collect()
+    }
+
+
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    fn is_coder_agent(&self) -> bool {
+        self.coder_agent
+    }
+
+    fn set_model(&mut self, model: &str) {
+        self.model = model.to_string();
+    }
+
+    fn set_temperature(&mut self, temperature: f64) {
+        self.temperature = Some(temperature);
+    }
+
+    fn set_max_tokens(&mut self, max_tokens: u64) {
+        self.max_tokens = Some(max_tokens);
+    }
+
+    fn add_system_msg(&mut self, sys_msg: &str){
+        self.messages.push(Message {
+            role: "system".to_string(),
+            content: sys_msg.to_string(),
+        });
+    }
+
+    // Send a message and receive a response
+    async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+        if self.coder_agent {
+            self.handle_coder_agent(user_message).await
+        } else {
+            self.handle_normal_conversation(user_message).await
+        }
+    }
+
     // Changes the current agent to a coder_agent
-    pub fn convert_to_coder(&mut self)
+    fn convert_to_coder(&mut self)
     {
         if self.coder_agent == true
         {
@@ -225,7 +261,7 @@ impl BaseAgent {
         self.coder_agent = true;
     }
 
-    pub fn convert_to_chat(&mut self)
+    fn convert_to_chat(&mut self)
     {
         if self.coder_agent == false
         {
@@ -246,7 +282,7 @@ impl BaseAgent {
     }
 
     // Export the agent
-    pub fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+    fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
         let json = serde_json::to_string(self)?;
         let encoded = encode(json);
 
@@ -257,7 +293,7 @@ impl BaseAgent {
     }
 
     // Import the agent
-    pub fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
+    fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
         let encoded = fs::read_to_string(file_path)?;
         let decoded = decode(encoded)?;
         let json = String::from_utf8(decoded)?;

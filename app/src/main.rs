@@ -1,16 +1,16 @@
 use std::io::{self, Write};
 use std::error::Error;
-use agents::gpt4free::GPT4FreeAgent;
+use agents::{base_agent::BaseAgent, gpt4free::GPT4FreeAgent, agent_trait::AgentTrait};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     print_logo();
-    let mut agents: Vec<GPT4FreeAgent> = vec![GPT4FreeAgent::new("dummy")]; 
+    let mut agents: Vec<Box<dyn AgentTrait>> = vec![Box::new(GPT4FreeAgent::new("Agent1"))];
 
     loop {
         print_agents(&agents);
         print_help();
-        
+
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
         let input = input.trim();
@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } else if let Some(agent_nr) = input.strip_prefix("chat ") {
             if let Ok(index) = agent_nr.parse::<usize>() {
                 if let Some(agent) = agents.get_mut(index) {
-                    chat_mode(agent).await?;
+                    chat_mode(agent.as_mut()).await?;
                 } else {
                     println!("Invalid agent number.");
                 }
@@ -34,20 +34,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     println!("Invalid agent number.");
                 }
             }
-        }
-
-        else if let Some(filename) = input.strip_prefix("import ") {
-            // Import an agent from a file
+        } else if let Some(filename) = input.strip_prefix("import ") {
             let file_path = format!("export/{}", filename);
-            match GPT4FreeAgent::import_from_file(&file_path) {
+            match BaseAgent::import_from_file(&file_path) {
                 Ok(agent) => {
-                    agents.push(agent);
+                    agents.push(Box::new(agent));
                     println!("Agent imported successfully from {}", file_path);
                 }
                 Err(e) => println!("Error importing agent: {}", e),
             }
         } else if let Some(agent_nr) = input.strip_prefix("export ") {
-            // Export an agent to a file
             if let Ok(index) = agent_nr.parse::<usize>() {
                 if let Some(agent) = agents.get(index) {
                     let file_path = format!("export/agent_{}.agent", agent.get_name());
@@ -59,16 +55,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     println!("Invalid agent number.");
                 }
             }
-        }
-
-        else {
+        } else {
             println!("Unknown command.");
         }
     }
     Ok(())
 }
 
-fn print_agents(agents: &Vec<GPT4FreeAgent>) {
+fn print_agents(agents: &Vec<Box<dyn AgentTrait>>) {
     println!("\nAvailable Agents:");
     println!("Idx | Type  | Name");
     println!("----------------------------");
@@ -87,7 +81,7 @@ fn print_help() {
     println!("quit - Exit the program\n");
 }
 
-async fn chat_mode(agent: &mut GPT4FreeAgent) -> Result<(), Box<dyn Error>> {
+async fn chat_mode(agent: &mut dyn AgentTrait) -> Result<(), Box<dyn Error>> {
     println!("\nEntering chat mode. Type 'quit' to return.");
     loop {
         let mut user_input = String::new();
@@ -99,7 +93,7 @@ async fn chat_mode(agent: &mut GPT4FreeAgent) -> Result<(), Box<dyn Error>> {
         if user_input == "quit" {
             break;
         }
-        
+
         match agent.send_message(user_input).await {
             Ok(response) => println!("{}: {}", agent.get_name(), response),
             Err(e) => println!("Error: {}", e),
@@ -108,8 +102,8 @@ async fn chat_mode(agent: &mut GPT4FreeAgent) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn print_logo(){
-        let ascii_art = r#"
+fn print_logo() {
+    let ascii_art = r#"
     ████████╗ ██████╗ ██╗  ██╗ █████╗ 
     ╚══██╔══╝██╔═══██╗██║ ██╔╝██╔══██╗
        ██║   ██║   ██║█████╔╝ ███████║
@@ -117,5 +111,5 @@ fn print_logo(){
        ██║   ╚██████╔╝██║  ██╗██║  ██║
        ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
     "#;
-        println!("{}", ascii_art);
+    println!("{}", ascii_art);
 }

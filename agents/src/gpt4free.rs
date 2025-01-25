@@ -1,6 +1,9 @@
 use crate::base_agent::BaseAgent;
 use std::error::Error;
 use models::Message;
+use crate::agent_trait::AgentTrait;
+use async_trait::async_trait;
+
 pub struct GPT4FreeAgent {
     base: BaseAgent,
 }
@@ -34,92 +37,78 @@ impl GPT4FreeAgent {
         );
         Self { base }
     }
+}
 
-    pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+
+#[async_trait]
+impl AgentTrait for GPT4FreeAgent {
+    async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         self.base.send_message(user_message).await
     }
 
-    pub fn set_custom_provider(&mut self, provider: &str) {
+    fn set_custom_provider(&mut self, provider: &str) {
         self.base.set_model(provider);
     }
 
-    pub fn get_custom_provider(&self) -> &str {
-        &self.base.model
+    fn get_provider(&self) -> Option<&str> {
+        self.base.get_provider()
     }
 
-    // Setter and Getter for temperature
-    pub fn set_temperature(&mut self, temperature: f64) {
+    fn convert_to_chat(&mut self) {
+        self.base.convert_to_chat();
+    }
+
+    fn set_model(&mut self, model: &str) {
+        self.base.set_model(model);
+    }
+
+
+    fn set_temperature(&mut self, temperature: f64) {
         self.base.set_temperature(temperature);
     }
 
-    pub fn get_temperature(&self) -> Option<f64> {
-        self.base.temperature
+    fn get_temperature(&self) -> Option<f64> {
+        self.base.get_temperature()
     }
 
-    // Setter and Getter for max_tokens
-    pub fn set_max_tokens(&mut self, max_tokens: u64) {
+    fn set_max_tokens(&mut self, max_tokens: u64) {
         self.base.set_max_tokens(max_tokens);
     }
 
-    pub fn get_max_tokens(&self) -> Option<u64> {
-        self.base.max_tokens
+    fn get_max_tokens(&self) -> Option<u64> {
+        self.base.get_max_tokens()
     }
 
-    // Add a system message
-    pub fn add_system_msg(&mut self, sys_msg: &str) {
+    fn add_system_msg(&mut self, sys_msg: &str) {
         self.base.add_system_msg(sys_msg);
     }
 
-    // Get all system messages
-    pub fn get_system_messages(&self) -> Vec<&Message> {
-        self.base
-            .messages
-            .iter()
-            .filter(|msg| msg.role == "system")
-            .collect()
+    fn get_system_messages(&self) -> Vec<&Message> {
+        self.base.get_system_messages()
     }
 
-    // Convert to coder agent
-    pub fn convert_to_coder(&mut self) {
+    fn convert_to_coder(&mut self) {
         self.base.convert_to_coder();
     }
 
-    // Check if the agent is a coder agent
-    pub fn is_coder_agent(&self) -> bool {
-        self.base.coder_agent
+    fn is_coder_agent(&self) -> bool {
+        self.base.is_coder_agent()
     }
 
-    // Get the API URL
-    pub fn get_api_url(&self) -> &str {
-        &self.base.api_url
+    fn get_model(&self) -> &str {
+       self.base.get_model()
     }
 
-    // Get the API key
-    pub fn get_api_key(&self) -> Option<&String> {
-        self.base.api_key.as_ref()
+    fn get_name(&self) -> &str  {
+        &self.base.get_name()
     }
 
-    // Get the model
-    pub fn get_model(&self) -> &str {
-        &self.base.model
-    }
-
-    // Get the provider
-    pub fn get_provider(&self) -> Option<&String> {
-        self.base.provider.as_ref()
-    }
-
-    // Get the name
-    pub fn get_name(&self) -> &str  {
-        &self.base.name
-    }
-
-    pub fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+    fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
         self.base.export_to_file(file_path)?;
         Ok(())
     }
 
-    pub fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
+    fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
         // reconstruct base
         let base = BaseAgent::import_from_file(file_path)?;
         Ok(Self { base })

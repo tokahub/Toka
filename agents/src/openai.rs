@@ -1,19 +1,21 @@
 use crate::base_agent::BaseAgent;
 use std::error::Error;
+use models::Message;
+use crate::agent_trait::AgentTrait;
+use async_trait::async_trait;
 
-pub struct GPT4FreeAgent {
+pub struct OpenAiAgent {
     base: BaseAgent,
 }
 
-impl GPT4FreeAgent {
-    // Create a new GPT4FreeAgent
-    pub fn new(name : &str, api_key: &str) -> Self {
+impl OpenAiAgent {
+    // Create a new OpenAiAgent
+    pub fn new(name : &str) -> Self {
         let api_url = "https://api.openai.com/v1/chat/completions";
-        // Will need an Api key
         let base = BaseAgent::new_with_param(
             name,
             api_url,
-            Some(api_key.to_string()),
+            None,
             None,
             Some("gpt-4".to_string()),
             None,
@@ -21,33 +23,91 @@ impl GPT4FreeAgent {
         Self { base }
     }
 
-    pub fn new_with_sys(name : &str, system_content: &str, api_key: &str) -> Self {
+    pub fn new_with_sys(name : &str, system_content: &str) -> Self {
         let api_url = "https://api.openai.com/v1/chat/completions";
-        // Will need an Api key
         let base = BaseAgent::new_with_param(
             name,
             api_url,
-            Some(api_key.to_string()),
+            None,
             Some(system_content.to_string()),
             Some("gpt-4".to_string()),
             None,
         );
         Self { base }
     }
+}
 
-    pub async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+
+#[async_trait]
+impl AgentTrait for OpenAiAgent {
+    async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         self.base.send_message(user_message).await
     }
 
-    pub fn set_custom_provider(&mut self, provider: &str) {
+    fn set_custom_provider(&mut self, provider: &str) {
         self.base.set_model(provider);
     }
 
-    pub fn set_temperature(&mut self, temperature: f64) {
+    fn get_provider(&self) -> Option<&str> {
+        self.base.get_provider()
+    }
+
+    fn convert_to_chat(&mut self) {
+        self.base.convert_to_chat();
+    }
+
+    fn set_model(&mut self, model: &str) {
+        self.base.set_model(model);
+    }
+
+    fn set_temperature(&mut self, temperature: f64) {
         self.base.set_temperature(temperature);
     }
 
-    pub fn set_max_tokens(&mut self, max_tokens: u64) {
+    fn get_temperature(&self) -> Option<f64> {
+        self.base.get_temperature()
+    }
+
+    fn set_max_tokens(&mut self, max_tokens: u64) {
         self.base.set_max_tokens(max_tokens);
+    }
+
+    fn get_max_tokens(&self) -> Option<u64> {
+        self.base.get_max_tokens()
+    }
+
+    fn add_system_msg(&mut self, sys_msg: &str) {
+        self.base.add_system_msg(sys_msg);
+    }
+
+    fn get_system_messages(&self) -> Vec<&Message> {
+        self.base.get_system_messages()
+    }
+
+    fn convert_to_coder(&mut self) {
+        self.base.convert_to_coder();
+    }
+
+    fn is_coder_agent(&self) -> bool {
+        self.base.is_coder_agent()
+    }
+
+    fn get_model(&self) -> &str {
+       self.base.get_model()
+    }
+
+    fn get_name(&self) -> &str  {
+        &self.base.get_name()
+    }
+
+    fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        self.base.export_to_file(file_path)?;
+        Ok(())
+    }
+
+    fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>> {
+        // reconstruct base
+        let base = BaseAgent::import_from_file(file_path)?;
+        Ok(Self { base })
     }
 }
