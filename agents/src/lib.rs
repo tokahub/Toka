@@ -3,3 +3,5 @@ pub mod base_agent;
 pub mod openai;
 pub mod agent_trait;
 pub mod deepseek;
+pub mod claude;
+pub mod grok;
