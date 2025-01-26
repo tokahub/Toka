@@ -1,4 +1,5 @@
 use agents::gpt4free::GPT4FreeAgent;
+use agents::agent_trait::AgentTrait;
 
 #[tokio::main]
 async fn main() {

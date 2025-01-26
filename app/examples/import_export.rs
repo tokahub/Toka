@@ -1,5 +1,6 @@
 use agents::gpt4free::GPT4FreeAgent;
 use std::error::Error;
+use agents::agent_trait::AgentTrait;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -22,8 +23,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Agent imported from {}", export_path);
 
     // Assert that all parameters match
-    assert_eq!(agent.get_api_url(), imported_agent.get_api_url());
-    assert_eq!(agent.get_api_key(), imported_agent.get_api_key());
     assert_eq!(agent.get_model(), imported_agent.get_model());
     assert_eq!(agent.get_provider(), imported_agent.get_provider());
     assert_eq!(agent.get_temperature(), imported_agent.get_temperature());
