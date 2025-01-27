@@ -1,7 +1,7 @@
 // This is the base class for all different models there is derivitation
 // It is recommended to use the correct derived class rather than the BaseAgent
 use reqwest::Client;
-use models::{GPTRequest, GPTResponse, Message};
+use models::{GPTRequest, GPTResponse, Message, TwitterCredentials};
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{self, Write};
@@ -10,6 +10,7 @@ use serde::{Serialize, Deserialize};
 use base64::{encode, decode};
 use async_trait::async_trait;
 use crate::agent_trait::AgentTrait;
+use utils::post_twitter::post_tweet;
 
 #[derive(Serialize, Deserialize)]
 pub struct BaseAgent {
@@ -24,6 +25,8 @@ pub struct BaseAgent {
     pub max_tokens: Option<u64>,
     pub messages: Vec<Message>,
     pub coder_agent: bool,
+    pub x_agent: bool,
+    pub twitter_credentials: Option<TwitterCredentials>, 
 }
 
 impl BaseAgent {
@@ -52,6 +55,8 @@ impl BaseAgent {
             max_tokens: None,
             messages,
             coder_agent: false,
+            x_agent: false,
+            twitter_credentials: None,
         }
     }
 
@@ -59,19 +64,19 @@ impl BaseAgent {
         Self::new_with_param(name, api_url, None, None, None, None)
     }
 
-        // Build the GPTRequest payload
-        fn build_gpt_request(&self) -> GPTRequest {
-            GPTRequest {
-                model: self.model.clone(),
-                api_key: self.api_key.clone(),
-                provider: self.provider.clone().unwrap_or_else(|| "".to_string()),
-                messages: self.messages.clone(),
-                temperature: self.temperature,
-                max_tokens: self.max_tokens,
-            }
+    // Build the GPTRequest payload
+    fn build_gpt_request(&self) -> GPTRequest {
+        GPTRequest {
+            model: self.model.clone(),
+            api_key: self.api_key.clone(),
+            provider: self.provider.clone().unwrap_or_else(|| "".to_string()),
+            messages: self.messages.clone(),
+            temperature: self.temperature,
+            max_tokens: self.max_tokens,
         }
+    }
 
-            // Handle normal conversation
+    // Handle normal conversation
     pub async fn handle_normal_conversation(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         self.messages.push(Message {
             role: "user".to_string(),
@@ -89,19 +94,28 @@ impl BaseAgent {
 
         Ok(reply)
     }
+
+    pub async fn handle_twitter_agent(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
+        if let Some(credentials) = &self.twitter_credentials {
+            match post_tweet(
+                &credentials.consumer_key,
+                &credentials.consumer_secret,
+                &credentials.access_token,
+                &credentials.access_token_secret,
+                user_message,
+            )
+            .await
+            {
+                Ok(()) => Ok("Successfully posted tweet!".to_string()),
+                Err(e) => Err(format!("Failed to post tweet: {}", e).into()),
+            }
+        } else {
+            Err("Twitter credentials not set.".into())
+        }
+    }
     
     pub async fn handle_coder_agent(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
         let build_mode = user_message.starts_with("!build");
-       
-        /*
-        if build_mode
-        {
-            println!("builder mode active");
-        }
-        else {
-            println!("builder mode not active")
-        }
-        */
 
         if !build_mode {
             return self.handle_normal_conversation(user_message).await;
@@ -208,6 +222,10 @@ impl AgentTrait for BaseAgent {
         self.coder_agent
     }
 
+    fn is_twitter_agent(&self) -> bool {
+        self.x_agent
+    }
+
     fn set_model(&mut self, model: &str) {
         self.model = model.to_string();
     }
@@ -229,7 +247,9 @@ impl AgentTrait for BaseAgent {
 
     // Send a message and receive a response
     async fn send_message(&mut self, user_message: &str) -> Result<String, Box<dyn Error>> {
-        if self.coder_agent {
+        if self.x_agent {
+            self.handle_twitter_agent(user_message).await
+        } else if self.coder_agent {
             self.handle_coder_agent(user_message).await
         } else {
             self.handle_normal_conversation(user_message).await
@@ -258,12 +278,37 @@ impl AgentTrait for BaseAgent {
             content: system_message.to_string(),
         });
 
+        self.x_agent = false;
         self.coder_agent = true;
+    }
+
+    // Changes the current agent to a coder_agent
+    fn convert_to_twitter(&mut self)
+    {
+        if self.x_agent == true
+        {
+            println!("Already a twitter agent");
+            return
+        }
+
+        // Delete all system messages
+        self.messages.retain(|msg| msg.role != "system");
+
+        let system_content = "You are an intelligent assistant specialized in writing concise and engaging tweets. Important: use 280 characters or less";
+
+        self.messages.push(Message{
+            role: "system".to_string(),
+            content: system_content.to_string(),
+        });
+
+        
+        self.coder_agent = false;
+        self.x_agent = true;
     }
 
     fn convert_to_chat(&mut self)
     {
-        if self.coder_agent == false
+        if self.coder_agent == false && self.x_agent == false
         {
             println!("Already a chat agent");
             return
@@ -278,7 +323,8 @@ impl AgentTrait for BaseAgent {
             content: system_message.to_string(),
         });
 
-        self.coder_agent = true;
+        self.coder_agent = false;
+        self.x_agent = false;
     }
 
     // Export the agent

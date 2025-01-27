@@ -93,6 +93,14 @@ impl AgentTrait for OpenAiAgent {
         self.base.is_coder_agent()
     }
 
+    fn convert_to_twitter(&mut self) {
+        self.base.convert_to_twitter();
+    }
+
+    fn is_twitter_agent(&self) -> bool {
+        self.base.is_twitter_agent()
+    }
+
     fn get_model(&self) -> &str {
        self.base.get_model()
     }

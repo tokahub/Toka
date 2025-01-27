@@ -6,8 +6,10 @@ use models::message::Message;
 pub trait AgentTrait {
     fn get_name(&self) -> &str;
     fn is_coder_agent(&self) -> bool;
+    fn is_twitter_agent(&self) -> bool;
     fn convert_to_coder(&mut self);
     fn convert_to_chat(&mut self);
+    fn convert_to_twitter(&mut self);
     async fn send_message(&mut self, input: &str) -> Result<String, Box<dyn Error>>;
     fn export_to_file(&self, file_path: &str) -> Result<(), Box<dyn Error>>;
     fn import_from_file(file_path: &str) -> Result<Self, Box<dyn Error>>

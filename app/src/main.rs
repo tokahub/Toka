@@ -5,7 +5,9 @@ use agents::{base_agent::BaseAgent, gpt4free::GPT4FreeAgent, agent_trait::AgentT
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     print_logo();
-    let mut agents: Vec<Box<dyn AgentTrait>> = vec![Box::new(GPT4FreeAgent::new("Agent1"))];
+    let mut agents: Vec<Box<dyn AgentTrait>> = vec![Box::new(GPT4FreeAgent::new("Alpha"))];
+    agents.push(Box::new(GPT4FreeAgent::new("Beta")));
+    agents.push(Box::new(GPT4FreeAgent::new("Charlie")));
 
     loop {
         print_agents(&agents);
@@ -34,6 +36,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     println!("Invalid agent number.");
                 }
             }
+            
+        }
+        else if let Some(agent_nr) = input.strip_prefix("convert to twitter ") {
+            if let Ok(index) = agent_nr.parse::<usize>() {
+                if let Some(agent) = agents.get_mut(index) {
+                    agent.convert_to_twitter();
+                    println!("Agent {} converted to twitter mode!", index);
+                } else {
+                    println!("Invalid agent number.");
+                }
+            }
+            
+        }
+        else if let Some(agent_nr) = input.strip_prefix("convert to chat ") {
+            if let Ok(index) = agent_nr.parse::<usize>() {
+                if let Some(agent) = agents.get_mut(index) {
+                    agent.convert_to_chat();
+                    println!("Agent {} converted to chat mode!", index);
+                } else {
+                    println!("Invalid agent number.");
+                }
+            }
+            
         } else if let Some(filename) = input.strip_prefix("import ") {
             let file_path = format!("export/{}", filename);
             match BaseAgent::import_from_file(&file_path) {
@@ -64,11 +89,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 fn print_agents(agents: &Vec<Box<dyn AgentTrait>>) {
     println!("\nAvailable Agents:");
-    println!("Idx | Type  | Name");
+    println!("Idx | Type    | Name");
     println!("----------------------------");
     for (i, agent) in agents.iter().enumerate() {
-        let agent_type = if agent.is_coder_agent() { "Coder" } else { "Chat" };
-        println!("{:3} | {:5} | {}", i, agent_type, agent.get_name());
+        let agent_type = if agent.is_coder_agent() { "Coder" } else if agent.is_twitter_agent() { "Twitter" } else { "Chat" };
+        println!("{:3} | {:7} | {}", i, agent_type, agent.get_name());
     }
 }
 
@@ -76,6 +101,8 @@ fn print_help() {
     println!("\nCommands:");
     println!("chat <agent nr> - Chat with the specified agent");
     println!("convert to coder <agent nr> - Convert an agent to coder mode");
+    println!("convert to twitter <agent nr> - Convert an agent to twitter mode");
+    println!("convert to chat <agent nr> - Convert an agent to chat mode");
     println!("import <filename> - import a new agent");
     println!("export <agent nr> - export an agent");
     println!("quit - Exit the program\n");
@@ -112,4 +139,5 @@ fn print_logo() {
        ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
     "#;
     println!("{}", ascii_art);
+    println!("ver: alpha 1.0.0")
 }
