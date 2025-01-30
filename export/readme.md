@@ -1,1 +1,3 @@
-Agents that have been exported should be placed here
+# Export
+
+By default, Agents exported by Toka will be stored in this folder.

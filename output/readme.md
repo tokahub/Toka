@@ -1,1 +1,3 @@
-Files that get created by toka will be placed into this folder by default
+# Output
+
+By default, files created by Toka will be stored in this folder

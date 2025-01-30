@@ -1,3 +1,5 @@
+// Example showing the coding agent building a simple Rust program that adds two numbers together
+
 use agents::gpt4free::GPT4FreeAgent;
 use agents::agent_trait::AgentTrait;
 

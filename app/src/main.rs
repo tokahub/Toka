@@ -6,8 +6,6 @@ use agents::{base_agent::BaseAgent, gpt4free::GPT4FreeAgent, agent_trait::AgentT
 async fn main() -> Result<(), Box<dyn Error>> {
     print_logo();
     let mut agents: Vec<Box<dyn AgentTrait>> = vec![Box::new(GPT4FreeAgent::new("Alpha"))];
-    agents.push(Box::new(GPT4FreeAgent::new("Beta")));
-    agents.push(Box::new(GPT4FreeAgent::new("Charlie")));
 
     loop {
         print_agents(&agents);

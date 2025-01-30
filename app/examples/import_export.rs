@@ -1,3 +1,5 @@
+// Example showing how to export and import an agent with verifications
+
 use agents::gpt4free::GPT4FreeAgent;
 use std::error::Error;
 use agents::agent_trait::AgentTrait;

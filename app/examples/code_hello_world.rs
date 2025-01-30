@@ -1,3 +1,5 @@
+// Example that shows the coding agent build a simple Rust program that prints "Hello, World!" to the console
+
 use agents::gpt4free::GPT4FreeAgent;
 use agents::agent_trait::AgentTrait;
 
